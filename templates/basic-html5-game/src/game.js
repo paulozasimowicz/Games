@@ -31,13 +31,24 @@ class Game {
     }
     
     setupInput() {
-        window.addEventListener('keydown', (e) => {
+        // Store event handlers for cleanup
+        this.handleKeyDown = (e) => {
             this.keys[e.key.toLowerCase()] = true;
-        });
+        };
         
-        window.addEventListener('keyup', (e) => {
+        this.handleKeyUp = (e) => {
             this.keys[e.key.toLowerCase()] = false;
-        });
+        };
+        
+        window.addEventListener('keydown', this.handleKeyDown);
+        window.addEventListener('keyup', this.handleKeyUp);
+    }
+    
+    // Cleanup method to remove event listeners
+    destroy() {
+        this.isRunning = false;
+        window.removeEventListener('keydown', this.handleKeyDown);
+        window.removeEventListener('keyup', this.handleKeyUp);
     }
     
     start() {
@@ -64,19 +75,33 @@ class Game {
     }
     
     update(deltaTime) {
-        // Handle player movement
+        // Handle player movement with normalized diagonal movement
+        let moveX = 0;
+        let moveY = 0;
+        
         if (this.keys['arrowleft'] || this.keys['a']) {
-            this.player.x -= this.player.speed * deltaTime;
+            moveX -= 1;
         }
         if (this.keys['arrowright'] || this.keys['d']) {
-            this.player.x += this.player.speed * deltaTime;
+            moveX += 1;
         }
         if (this.keys['arrowup'] || this.keys['w']) {
-            this.player.y -= this.player.speed * deltaTime;
+            moveY -= 1;
         }
         if (this.keys['arrowdown'] || this.keys['s']) {
-            this.player.y += this.player.speed * deltaTime;
+            moveY += 1;
         }
+        
+        // Normalize diagonal movement to prevent faster diagonal speed
+        if (moveX !== 0 && moveY !== 0) {
+            const length = Math.sqrt(moveX * moveX + moveY * moveY);
+            moveX /= length;
+            moveY /= length;
+        }
+        
+        // Apply movement
+        this.player.x += moveX * this.player.speed * deltaTime;
+        this.player.y += moveY * this.player.speed * deltaTime;
         
         // Keep player in bounds
         this.player.x = Math.max(0, Math.min(this.canvas.width - this.player.width, this.player.x));
